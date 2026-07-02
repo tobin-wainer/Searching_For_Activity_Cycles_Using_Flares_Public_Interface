@@ -1,6 +1,6 @@
 # HDF5 Structure and Access Example
 
-The Cycle 7 fill-in products are stored in HDF5 files named like `tic260506296_final_output_Cycle7_Fillin.h5`. A representative file has three top-level groups:
+The .h5 products are stored on Zenodo in HDF5 files named like `tic260506296_final_output_Cycle7_Fillin.h5`. Each file has three top-level groups:
 
 - `Summary`
 - `Sectors/sector_<n>_lc`
@@ -10,7 +10,7 @@ The Cycle 7 fill-in products are stored in HDF5 files named like `tic260506296_f
 
 This group stores global metadata for the TIC and the stitched activity-cycle products.
 
-- `full_sample_slope`, `full_sample_intercept`: the full-sample power-law fit used in the diagnostic plots.
+- `full_sample_slope`, `full_sample_intercept`: the full-sample power-law fit to the FFD, used in the diagnostic plots.
 - `gp_chi2_warning_sectors`, `gp_chi2_warning_threshold`, `n_gp_chi2_warnings`: GP quality-control metadata.
 - `n_sectors_current`, `n_sectors_filled_in`, `n_sectors_old_complete`: bookkeeping for the merged dataset.
 - `old_final_used`: path to the upstream merged file that fed the fill-in product.
@@ -22,24 +22,25 @@ Each `Sectors/sector_<n>_lc` group contains one TESS sector light curve and its 
 
 Main arrays:
 
+- `sector_duration`: total observing duration in days.
 - `lc_time`, `lc_flux`, `lc_flux_err`: the sector light curve.
 - `mu`: GP model prediction for the light curve.
 - `flare_mask`: boolean cadence mask marking flare cadences.
-- `flare_starts`, `flare_ends`: cadence indices for each identified flare.
+- `flare_starts`, `flare_ends`: indices in the sector light curve for each identified flare.
 - `ed`, `ed_err`: raw flare equivalent durations.
 - `FFD_eds`, `FFD_ed_err`: flare distribution values used in the rate fit.
 - `raw_rate`, `raw_rate_err`: flare rates from the uncorrected equivalent durations.
-- `corrected_eds`, `corrected_rate`: completeness-corrected values above the 50% threshold.
+- `corrected_eds`, `corrected_rate`: completeness-corrected FFD values above the 50% threshold.
 - `F_Flare_F_Bol`, `F_Flare_F_Bol_err`: flare-to-bolometric flux fraction and uncertainty.
+- `beta`, `beta_err`: sector FFD slope and uncertainty.
 - `fifty_percent_completeness_limit`: ED completeness threshold.
 
-Model and quality-control fields:
+Verification fields:
 
-- `beta`, `beta_err`: sector flare-distribution slope and uncertainty.
 - `comp_function_params`: completeness function parameters.
 - `gp_reduced_chi2`, `gp_check_required`: GP diagnostic information.
 - `gp_params/log_*`: the stored GP parameterization.
-- `sector_duration`: total observing duration in days.
+
 
 ## Stitched Groups
 
