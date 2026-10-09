@@ -1,6 +1,6 @@
 # Searching For Activity Cycles Using Flares
 
-This repository is the public interface for data and Figures from. Wainer et al. 2026, "Searching for Stellar Activity Cycles using Flares II: The TESS CVZ". The HDF5 data products files are hosted on Zenodo and referenced here once the DOI is available. The figures in this repo are exports of the diagnostic plots for the 17 candidates from the paper.
+This repository is the public interface for data and Figures from. Wainer et al. 2026, "Searching for Stellar Activity Cycles using Flares II: The TESS CVZ". The HDF5 data products files are hosted on [Zenodo](https://zenodo.org/records/23271534). The figures in this repo are exports of the diagnostic plots for the 17 candidates from the paper.
 
 ## Data Access
 
