@@ -6,7 +6,7 @@ This repository is the public interface for data and Figures from. Wainer et al.
 
 The Zenodo record will contain the actual `.h5` files and should be cited directly in any downstream use. Replace the placeholder below with the final DOI after publication.
 
-Zenodo DOI: **[to be added after release]**
+Zenodo DOI: 10.5281/zenodo.23271534
 
 
 
