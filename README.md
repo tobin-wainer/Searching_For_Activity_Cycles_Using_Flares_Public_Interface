@@ -12,7 +12,7 @@ Zenodo DOI: 10.5281/zenodo.23271534
 
 ## What Is In This Repo
 
-- `Figures/Best_Candidates/`: the diagnostic PDFs for the 17 candidates in the paper, named `tic<ID>.pdf`.
+- `Figures/Candidates/`: the diagnostic PDFs for the 17 candidates in the paper, named `tic<ID>.pdf`.
 - `code/access_hdf5_tutorial.py`: a small example that prints the HDF5 tree and plots one sector light curve with flare markers.
 - `code/make_6_panel_diagnostic_plot.py`: a standalone code to make 6-panel diagnostic plots, with a configurable colormap.
 - `code/README.md`: the HDF5 structure summary and a short access tutorial.
