@@ -21,14 +21,16 @@ Expected HDF5 structure:
     Stitched/      optional
 
 Usage from the command line:
-    python make_diagnostic_plot.py tic167344043_final_output_Cycle7_Fillin.h5 \
+    python make_6_panel_diagnostic_plot.py tic_167344043_final.h5 \
         --output-dir ./figures
 
 Usage for multiple files:
-    python make_diagnostic_plot.py tic*_final_output_Cycle7_Fillin.h5 \
+    python make_6_panel_diagnostic_plot.py tic_*_final.h5 \
         --output-dir ./figures
 
 Notes:
+    * beta_err is plotted exactly as stored; final products already include
+      the adopted sampling term. No additional plotting allowance is added.
     * beta = -99 is treated as a sentinel value indicating an invalid FFD fit.
     * The time axis uses the same units as the lc_time arrays stored in the HDF5 file.
     * Downward arrows in the flare-power panels mark points whose lower uncertainty
@@ -112,47 +114,29 @@ def _count_flares_above_limit(corrected_eds):
     return int(np.sum(np.isfinite(values) & (values != 0.0)))
 
 
-def _beta_plot_yerr(beta_err, n_sectors, max_err=5.0):
+def _beta_plot_yerr(beta_err, n_sectors=None, max_err=None):
+    """Return the stored beta error directly, without a plotting allowance.
+
+    Final HDF5 products already contain the adopted uncertainty. Do not add
+    another sector-count floor, clip the error, or replace missing errors with
+    an invented value. n_sectors and max_err are retained only for compatibility
+    with existing callers and do not alter the stored uncertainty.
     """
-    Compute the plotted uncertainty on beta.
+    return float(beta_err)
 
-    The formal beta uncertainty can be unrealistically small for sparsely sampled
-    FFDs. This helper adds a small floor that depends on how many sectors were
-    combined. Single-sector measurements receive the largest added floor, while
-    stitched measurements containing more sectors receive a smaller one.
 
-    Parameters
-    ----------
-    beta_err : float
-        Formal uncertainty on beta.
-    n_sectors : int
-        Number of sectors contributing to the measurement.
-    max_err : float
-        Maximum allowed plotted uncertainty.
+def _valid_beta_measurements(betas, beta_errs, times):
+    """Select valid beta fits with usable uncertainties and observation times.
 
-    Returns
-    -------
-    float
-        Error bar size used for plotting beta.
+    Failed fits retain beta=-99 even when their formerly NaN uncertainty has
+    been replaced by a simulation-only term. A finite error does not make those
+    fits valid. Retain the existing beta > -3 selection for all beta panels.
     """
-    if np.isfinite(beta_err):
-        base = abs(float(beta_err))
-    else:
-        base = 0.0
-
-    n = int(n_sectors)
-    if n <= 1:
-        extra = 0.25
-    elif n == 2:
-        extra = 0.17
-    elif n == 3:
-        extra = 0.14
-    elif n == 4:
-        extra = 0.12
-    else:
-        extra = 0.05
-
-    return float(np.clip(base + extra, 0.0, max_err))
+    beta = np.asarray(betas, dtype=float)
+    error = np.asarray(beta_errs, dtype=float)
+    time = np.asarray(times, dtype=float)
+    return (np.isfinite(beta) & (beta > -3)
+            & np.isfinite(error) & (error >= 0) & np.isfinite(time))
 
 
 def line(x, a, b):
@@ -369,7 +353,7 @@ def load_fillin_plot_inputs(h5_path):
         stitched = h["Stitched"] if "Stitched" in h else None
 
         # Extract the TIC ID from the filename.
-        tic_match = re.search(r"tic(\d+)", h5_path.name)
+        tic_match = re.search(r"tic_?(\d+)", h5_path.name)
         tic_id = int(tic_match.group(1)) if tic_match else -1
 
         # Read full-sample FFD fit quantities from the Summary group.
@@ -613,7 +597,8 @@ def make_diagnostic_plot(
     # -------------------------------------------------------------------------
     # Panel 2: sector-by-sector beta
     # -------------------------------------------------------------------------
-    valid_inds = (np.array(betas) > -3) & np.array(plot_sector_mask, dtype=bool)
+    valid_inds = (_valid_beta_measurements(betas, beta_errs, plot_sector_times)
+                  & np.array(plot_sector_mask, dtype=bool))
 
     if np.any(valid_inds):
         times = np.array(plot_sector_times, dtype=float)[valid_inds]
@@ -643,8 +628,8 @@ def make_diagnostic_plot(
     x_pad = 100.0 if (x_max - x_min) > 1700.0 else 50.0
     panel2_xlim = (x_min - x_pad, x_max + x_pad)
 
-    ax2.set_ylabel(r"$\beta$")
-    ax2.set_xlabel("Time")
+    ax2.set_ylabel(r"$\beta$ [log (Flares per day)]")
+    ax2.set_xlabel("Time [BJD - 2457000]")
     ax2.set_xlim(panel2_xlim)
 
     # -------------------------------------------------------------------------
@@ -706,7 +691,7 @@ def make_diagnostic_plot(
 
     ax3.scatter(p3_times, p3_vals, c=cpick.to_rgba(np.array(p3_times)), s=90)
     ax3.set_ylabel(r"$log(\frac{L_{fl}}{L_{TESS}})$")
-    ax3.set_xlabel("Time")
+    ax3.set_xlabel("Time [BJD - 2457000]")
     ax3.set_xlim(panel2_xlim)
 
     # -------------------------------------------------------------------------
@@ -747,7 +732,7 @@ def make_diagnostic_plot(
         c=cpick.to_rgba(np.array(p4_times, dtype=float)),
         s=90,
     )
-    ax4.set_xlabel("Time")
+    ax4.set_xlabel("Time [BJD - 2457000]")
     ax4.set_ylabel("N Flares")
     ax4.set_xlim(panel2_xlim)
 
@@ -760,7 +745,7 @@ def make_diagnostic_plot(
         ebe = np.array(epoch_beta_errs, dtype=float)
         ens = np.array(epoch_n_sectors, dtype=int)
 
-        evalid = (eb > -3) & np.isfinite(et)
+        evalid = _valid_beta_measurements(eb, ebe, et)
 
         # Filled triangles show epoch-stitched measurements.
         for t, b, be, nsec in zip(et[evalid], eb[evalid], ebe[evalid], ens[evalid]):
@@ -786,7 +771,7 @@ def make_diagnostic_plot(
         sbe = np.array(subepoch_beta_errs, dtype=float)
         sns = np.array(subepoch_n_sectors, dtype=int)
 
-        svalid = (sb > -3) & np.isfinite(st)
+        svalid = _valid_beta_measurements(sb, sbe, st)
 
         # Open triangles show sub-epoch-stitched measurements.
         for t, b, be, nsec in zip(st[svalid], sb[svalid], sbe[svalid], sns[svalid]):
@@ -829,8 +814,8 @@ def make_diagnostic_plot(
         label="Sub-epoch stitched",
     )
 
-    ax5.set_ylabel(r"$\beta$")
-    ax5.set_xlabel("Time")
+    ax5.set_ylabel(r"$\beta$ [log (Flares per day)]")
+    ax5.set_xlabel("Time [BJD - 2457000]")
     ax5.set_xlim(panel2_xlim)
     ax5.legend(fontsize=16, loc="upper right")
 
@@ -960,7 +945,7 @@ def make_diagnostic_plot(
         )
 
     ax6.set_ylabel(r"$log(\frac{L_{fl}}{L_{TESS}})$")
-    ax6.set_xlabel("Time")
+    ax6.set_xlabel("Time [BJD - 2457000]")
     ax6.set_xlim(panel2_xlim)
 
     # Add dummy artists for the stitched-flare-power legend.
@@ -1027,7 +1012,7 @@ def parse_args():
         "input_file",
         type=Path,
         nargs="+",
-        help="One or more tic*_final_output_Cycle7_Fillin.h5 files.",
+        help="One or more tic_<ticid>_final.h5 files (legacy fill-in names also supported).",
     )
 
     parser.add_argument(
